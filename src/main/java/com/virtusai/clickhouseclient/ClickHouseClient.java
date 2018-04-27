@@ -1,5 +1,8 @@
 package com.virtusai.clickhouseclient;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -14,6 +17,7 @@ import org.asynchttpclient.DefaultAsyncHttpClient;
 import org.asynchttpclient.DefaultAsyncHttpClientConfig;
 import org.asynchttpclient.Realm;
 import org.asynchttpclient.Request;
+import org.asynchttpclient.request.body.multipart.FilePart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +33,11 @@ public class ClickHouseClient implements AutoCloseable {
 
 	private final String endpoint;
 	private final AsyncHttpClient httpClient;
+	
+	public ClickHouseClient(String endpoint) {
+		this.endpoint = endpoint;
+		this.httpClient = new DefaultAsyncHttpClient();
+	}
 	
 
 	public ClickHouseClient(String endpoint, String username, String password) {
@@ -82,7 +91,33 @@ public class ClickHouseClient implements AutoCloseable {
 
 		return sendRequest(request).thenApply(rs -> null);
 	}
-
+	
+	public <T> CompletableFuture<ClickHouseResponse<T>> queryWithExternalData(String query, String structure, List<Object[]> data, Class<T> clazz) {
+		String queryWithFormat = query + " FORMAT " + INSERT_FORMAT;
+		
+		try {
+			final File temp = File.createTempFile("prefix-", "-suffix");
+			
+			try (FileWriter fr = new FileWriter(temp)) {
+				
+				fr.write(tabSeparatedString(data));
+				
+				Request request = httpClient.preparePost(endpoint)
+						.addQueryParam("query", queryWithFormat)
+						.addQueryParam("temp_structure", structure)
+						.addHeader("Content-Type", "multipart/form-data")
+						.addBodyPart(new FilePart("temp", temp))
+						.build();
+				
+				return sendRequest(request).thenApply(POJOMapper.toPOJO(clazz));
+			}
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
+	
 	private CompletableFuture<String> sendRequest(Request request) {
 		return httpClient.executeRequest(request).toCompletableFuture()
 		.handle((response, t) -> {
