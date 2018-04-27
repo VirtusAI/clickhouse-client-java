@@ -93,14 +93,15 @@ public class ClickHouseClient implements AutoCloseable {
 	}
 	
 	public <T> CompletableFuture<ClickHouseResponse<T>> queryWithExternalData(String query, String structure, List<Object[]> data, Class<T> clazz) {
-		String queryWithFormat = query + " FORMAT " + INSERT_FORMAT;
+		String queryWithFormat = query + " FORMAT " + SELECT_FORMAT;
 		
 		try {
-			final File temp = File.createTempFile("prefix-", "-suffix");
+			final File temp = File.createTempFile("temp", ".tsv");
 			
 			try (FileWriter fr = new FileWriter(temp)) {
 				
 				fr.write(tabSeparatedString(data));
+				fr.flush();
 				
 				Request request = httpClient.preparePost(endpoint)
 						.addQueryParam("query", queryWithFormat)
@@ -117,7 +118,7 @@ public class ClickHouseClient implements AutoCloseable {
 		}
 		
 	}
-	
+
 	private CompletableFuture<String> sendRequest(Request request) {
 		return httpClient.executeRequest(request).toCompletableFuture()
 		.handle((response, t) -> {
