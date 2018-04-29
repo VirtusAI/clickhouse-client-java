@@ -1,8 +1,10 @@
 package com.virtusai.clickhouseclient;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -98,20 +100,18 @@ public class ClickHouseClient implements AutoCloseable {
 		try {
 			final File temp = File.createTempFile("temp", ".tsv");
 			
-			try (FileWriter fr = new FileWriter(temp)) {
-				
+			try (OutputStreamWriter fr = new OutputStreamWriter(new FileOutputStream(temp), StandardCharsets.UTF_8)) {
 				fr.write(tabSeparatedString(data));
-				fr.flush();
-				
-				Request request = httpClient.preparePost(endpoint)
-						.addQueryParam("query", queryWithFormat)
-						.addQueryParam("temp_structure", structure)
-						.addHeader("Content-Type", "multipart/form-data")
-						.addBodyPart(new FilePart("temp", temp))
-						.build();
-				
-				return sendRequest(request).thenApply(POJOMapper.toPOJO(clazz));
 			}
+				
+			Request request = httpClient.preparePost(endpoint)
+					.addQueryParam("query", queryWithFormat)
+					.addQueryParam("temp_structure", structure)
+					.addHeader("Content-Type", "multipart/form-data")
+					.addBodyPart(new FilePart("temp", temp))
+					.build();
+			
+			return sendRequest(request).thenApply(POJOMapper.toPOJO(clazz)).whenComplete((res, t) -> temp.delete());
 			
 		} catch (IOException e) {
 			throw new RuntimeException(e);
