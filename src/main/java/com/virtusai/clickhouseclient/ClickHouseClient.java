@@ -69,8 +69,9 @@ public class ClickHouseClient implements AutoCloseable {
 		}
 	}
 	
-	public void setOptionalParams(Map<String, String> params) {
+	public ClickHouseClient setOptionalParams(Map<String, String> params) {
 		params.entrySet().forEach(e -> optParams.add(new Param(e.getKey(), e.getValue())));
+		return this;
 	}
 
 	public <T> CompletableFuture<ClickHouseResponse<T>> get(String query, Class<T> clazz) {
