@@ -2,14 +2,15 @@ package com.virtusai.clickhouseclient;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -17,6 +18,7 @@ import org.asynchttpclient.AsyncHttpClient;
 import org.asynchttpclient.AsyncHttpClientConfig;
 import org.asynchttpclient.DefaultAsyncHttpClient;
 import org.asynchttpclient.DefaultAsyncHttpClientConfig;
+import org.asynchttpclient.Param;
 import org.asynchttpclient.Realm;
 import org.asynchttpclient.Request;
 import org.asynchttpclient.request.body.multipart.FilePart;
@@ -33,11 +35,13 @@ public class ClickHouseClient implements AutoCloseable {
 	private static final String SELECT_FORMAT = "JSON";
 	private static final String INSERT_FORMAT = "TabSeparated";
 
+	private final List<Param> optParams;
 	private final String endpoint;
 	private final AsyncHttpClient httpClient;
 	
 	public ClickHouseClient(String endpoint) {
 		this.endpoint = endpoint;
+		this.optParams = new ArrayList<>();
 		this.httpClient = new DefaultAsyncHttpClient();
 	}
 	
@@ -45,6 +49,8 @@ public class ClickHouseClient implements AutoCloseable {
 	public ClickHouseClient(String endpoint, String username, String password) {
 		this.endpoint = endpoint;
 
+		this.optParams = new ArrayList<>();
+		
 		AsyncHttpClientConfig config = new DefaultAsyncHttpClientConfig.Builder()
 				.setRealm(new Realm.Builder(username, password)
 						.setUsePreemptiveAuth(true)
@@ -62,11 +68,16 @@ public class ClickHouseClient implements AutoCloseable {
 			LOG.error("Error closing http client", e);
 		}
 	}
+	
+	public void setOptionalParams(Map<String, String> params) {
+		params.entrySet().forEach(e -> optParams.add(new Param(e.getKey(), e.getValue())));
+	}
 
 	public <T> CompletableFuture<ClickHouseResponse<T>> get(String query, Class<T> clazz) {
 		String queryWithFormat = query + " FORMAT " + SELECT_FORMAT;
 
 		Request request = httpClient.prepareGet(endpoint)
+				.addQueryParams(optParams)
 				.addQueryParam("query", queryWithFormat)
 				.build();
 
@@ -77,6 +88,7 @@ public class ClickHouseClient implements AutoCloseable {
 		String queryWithFormat = query + " FORMAT " + SELECT_FORMAT;
 
 		Request request = httpClient.preparePost(endpoint)
+				.addQueryParams(optParams)
 				.setBody(queryWithFormat)
 				.build();
 
@@ -105,6 +117,7 @@ public class ClickHouseClient implements AutoCloseable {
 			}
 				
 			Request request = httpClient.preparePost(endpoint)
+					.addQueryParams(optParams)
 					.addQueryParam("query", queryWithFormat)
 					.addQueryParam("temp_structure", structure)
 					.addHeader("Content-Type", "multipart/form-data")
