@@ -78,6 +78,7 @@ public class ClickHouseClient implements AutoCloseable {
 		String queryWithFormat = query + " FORMAT " + SELECT_FORMAT;
 
 		Request request = httpClient.prepareGet(endpoint)
+				.addQueryParams(new ArrayList<>())
 				.addQueryParams(optParams)
 				.addQueryParam("query", queryWithFormat)
 				.build();
@@ -91,6 +92,7 @@ public class ClickHouseClient implements AutoCloseable {
 		String queryWithFormat = query + " FORMAT " + SELECT_FORMAT;
 
 		Request request = httpClient.preparePost(endpoint)
+				.addQueryParams(new ArrayList<>())
 				.addQueryParams(optParams)
 				.setBody(queryWithFormat)
 				.build();
@@ -104,6 +106,7 @@ public class ClickHouseClient implements AutoCloseable {
 		String queryWithFormat = query + " FORMAT " + INSERT_FORMAT;
 
 		Request request = httpClient.preparePost(endpoint)
+				.addQueryParams(new ArrayList<>())
 				.addQueryParam("query", queryWithFormat)
 				.setBody(tabSeparatedString(data))
 				.build();
@@ -122,6 +125,7 @@ public class ClickHouseClient implements AutoCloseable {
 			}
 				
 			Request request = httpClient.preparePost(endpoint)
+					.addQueryParams(new ArrayList<>())
 					.addQueryParams(optParams)
 					.addQueryParam("query", queryWithFormat)
 					.addQueryParam("temp_structure", structure)
