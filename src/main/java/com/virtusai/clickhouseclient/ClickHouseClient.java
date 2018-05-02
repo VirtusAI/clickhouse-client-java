@@ -81,6 +81,8 @@ public class ClickHouseClient implements AutoCloseable {
 				.addQueryParams(optParams)
 				.addQueryParam("query", queryWithFormat)
 				.build();
+		
+		LOG.debug("querying GET {}", queryWithFormat);
 
 		return sendRequest(request).thenApply(POJOMapper.toPOJO(clazz));
 	}
@@ -92,6 +94,8 @@ public class ClickHouseClient implements AutoCloseable {
 				.addQueryParams(optParams)
 				.setBody(queryWithFormat)
 				.build();
+		
+		LOG.debug("querying POST {}", queryWithFormat);
 
 		return sendRequest(request).thenApply(POJOMapper.toPOJO(clazz));
 	}
@@ -125,6 +129,8 @@ public class ClickHouseClient implements AutoCloseable {
 					.addBodyPart(new FilePart("temp", temp))
 					.build();
 			
+			LOG.debug("querying POST EXTERNAL {}", queryWithFormat);
+			
 			return sendRequest(request).thenApply(POJOMapper.toPOJO(clazz)).whenComplete((res, t) -> temp.delete());
 			
 		} catch (IOException e) {
@@ -134,6 +140,7 @@ public class ClickHouseClient implements AutoCloseable {
 	}
 
 	private CompletableFuture<String> sendRequest(Request request) {
+		LOG.debug("Sending request {}", request.getUrl());
 		return httpClient.executeRequest(request).toCompletableFuture()
 		.handle((response, t) -> {
 			if (t != null) {
