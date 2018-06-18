@@ -31,7 +31,7 @@
 		<dependency>
 			<groupId>com.github.virtusai</groupId>
 			<artifactId>async-http-client-shaded</artifactId>
-			<version>13b5e55480</version>
+			<version>c5c86e59aa</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
