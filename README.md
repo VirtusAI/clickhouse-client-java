@@ -26,6 +26,7 @@ Maven (add to `pom.xml`):
 CompletableFuture<ClickHouseResponse<T>> get(String query, Class<T> clazz);
 CompletableFuture<ClickHouseResponse<T>> post(String query, Class<T> clazz);
 CompletableFuture<Void> post(String query, List<Object[]> data);
+CompletableFuture<String> healthcheck();
 ```
 
 ## Example

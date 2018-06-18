@@ -142,6 +142,12 @@ public class ClickHouseClient implements AutoCloseable {
 		}
 		
 	}
+	
+	public CompletableFuture<String> healthcheck() {
+		Request request = httpClient.prepareGet(endpoint).build();
+
+		return sendRequest(request);
+	}
 
 	private CompletableFuture<String> sendRequest(Request request) {
 		LOG.debug("Sending request {}", request.getUrl());
