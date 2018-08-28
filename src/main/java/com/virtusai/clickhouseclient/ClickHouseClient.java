@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import org.asynchttpclient.AsyncHttpClient;
 import org.asynchttpclient.AsyncHttpClientConfig;
+import org.asynchttpclient.BoundRequestBuilder;
 import org.asynchttpclient.DefaultAsyncHttpClient;
 import org.asynchttpclient.DefaultAsyncHttpClientConfig;
 import org.asynchttpclient.Param;
@@ -147,6 +148,43 @@ public class ClickHouseClient implements AutoCloseable {
 		Request request = httpClient.prepareGet(endpoint).build();
 
 		return sendRequest(request);
+	}
+	
+	public <T> CompletableFuture<ClickHouseResponse<T>> queryWithMultipleExternalData(String query, String structure, List<List<Object[]>> data, Class<T> clazz) {
+		String queryWithFormat = query + " FORMAT " + SELECT_FORMAT;
+		
+		try {
+			
+			BoundRequestBuilder reqBuilder = httpClient.preparePost(endpoint)
+					.addQueryParams(new ArrayList<>())
+					.addQueryParams(optParams)
+					.addQueryParam("query", queryWithFormat)
+					.addQueryParam("temp_structure", structure)
+					.addHeader("Content-Type", "multipart/form-data");
+			
+			List<File> tempFiles = new ArrayList<>(data.size());
+			
+			for(int i=0; i<data.size(); i++) {
+			
+				final File temp = File.createTempFile("temp" + i, ".tsv");
+				
+				try (OutputStreamWriter fr = new OutputStreamWriter(new FileOutputStream(temp), StandardCharsets.UTF_8)) {
+					fr.write(tabSeparatedString(data.get(i)));
+				}
+				
+				reqBuilder = reqBuilder.addBodyPart(new FilePart("temp" + i, temp));
+			}
+				
+			Request request = reqBuilder.build();
+			
+			LOG.debug("querying POST EXTERNAL {}", queryWithFormat);
+			
+			return sendRequest(request).thenApply(POJOMapper.toPOJO(clazz)).whenComplete((res, t) -> tempFiles.forEach(f -> f.delete()));
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
 	}
 
 	private CompletableFuture<String> sendRequest(Request request) {
