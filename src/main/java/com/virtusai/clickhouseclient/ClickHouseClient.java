@@ -150,7 +150,7 @@ public class ClickHouseClient implements AutoCloseable {
 		return sendRequest(request);
 	}
 	
-	public <T> CompletableFuture<ClickHouseResponse<T>> queryWithMultipleExternalData(String query, String structure, List<List<Object[]>> data, Class<T> clazz) {
+	public <T> CompletableFuture<ClickHouseResponse<T>> queryWithMultipleExternalData(String query, List<String> structure, List<List<Object[]>> data, Class<T> clazz) {
 		String queryWithFormat = query + " FORMAT " + SELECT_FORMAT;
 		
 		try {
@@ -159,7 +159,6 @@ public class ClickHouseClient implements AutoCloseable {
 					.addQueryParams(new ArrayList<>())
 					.addQueryParams(optParams)
 					.addQueryParam("query", queryWithFormat)
-					.addQueryParam("temp_structure", structure)
 					.addHeader("Content-Type", "multipart/form-data");
 			
 			List<File> tempFiles = new ArrayList<>(data.size());
@@ -172,7 +171,9 @@ public class ClickHouseClient implements AutoCloseable {
 					fr.write(tabSeparatedString(data.get(i)));
 				}
 				
-				reqBuilder = reqBuilder.addBodyPart(new FilePart("temp" + i, temp));
+				reqBuilder = reqBuilder
+						.addBodyPart(new FilePart("temp" + i, temp))
+						.addQueryParam("temp" + i + "_structure", structure.get(i));
 			}
 				
 			Request request = reqBuilder.build();
