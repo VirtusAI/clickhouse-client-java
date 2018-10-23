@@ -1,12 +1,12 @@
 package com.virtusai.clickhouseclient;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -121,7 +121,7 @@ public class ClickHouseClient implements AutoCloseable {
 		try {
 			final File temp = File.createTempFile("temp", ".tsv");
 			
-			try (OutputStreamWriter fr = new OutputStreamWriter(new FileOutputStream(temp), StandardCharsets.UTF_8)) {
+			try (OutputStreamWriter fr = new OutputStreamWriter(Files.newOutputStream(temp.toPath()), StandardCharsets.UTF_8)) {
 				fr.write(tabSeparatedString(data));
 			}
 				
@@ -167,7 +167,7 @@ public class ClickHouseClient implements AutoCloseable {
 			
 				final File temp = File.createTempFile("temp" + i, ".tsv");
 				
-				try (OutputStreamWriter fr = new OutputStreamWriter(new FileOutputStream(temp), StandardCharsets.UTF_8)) {
+				try (OutputStreamWriter fr = new OutputStreamWriter(Files.newOutputStream(temp.toPath()), StandardCharsets.UTF_8)) {
 					fr.write(tabSeparatedString(data.get(i)));
 				}
 				
